@@ -30,6 +30,7 @@ Since it's a new empty object, the function which created it is Object, so targe
 We can basically set any property we want to Object prototype by sending { \_\_proto\_\_ : { \<property\> : \<value of the property\> }} 
 as req.body inside a POST request to '/api/calculate'.
 
+But, there is a problem. Probably you have already noticed that function isValidKey prevents us of injecting '\_\_proto\_\_' as key.
 However, we can bypass this. Every object has a constructor property, which points to the function which created it. Also, we can reffer to constructor.prototype, 
 which is the prototype of the function which created the object. This means that our target.\_\_proto\_\_ is the same as target.constructor.prototype. 
 So, our final payload to inject properties to Object is { constructor : { prototype : { \<property\> : \<value\> }}}
