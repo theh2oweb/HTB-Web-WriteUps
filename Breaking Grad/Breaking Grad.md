@@ -52,7 +52,7 @@ Result of the execution:
 
 <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo1.png" width="400px">
 
-## Remmote Code Execution
+## Remote Code Execution
 
 When accessing /debug/version, child_process.fork is executed inside helper/DebugHelper.js:
 
