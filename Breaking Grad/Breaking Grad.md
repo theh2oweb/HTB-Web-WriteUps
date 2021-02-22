@@ -1,22 +1,29 @@
 # Breaking Grad
-
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/Challenge.png" width="700px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/Challenge.png" width="700px">
+</p>
 
 In this challenge, we are provided with the source code and a Dockerfile to create a container and run the web app on our local host.
 Once the application is up and running, we can access it in our browser at 127.0.0.1:1337
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/MainPage.png" width="600px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/MainPage.png" width="600px">
+</p>
 
 Inspecting the source code, we see that it's a Node.js application using express. In routes/index.js we can see all available pages:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/routes%3Aindex.png" width="500px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/routes%3Aindex.png" width="500px">
+</p>
 
 
 ## Prototype Pollution Vulnerability
 
 Looking around, I saw a function that caught my attention in helpers/ObjectHelper.js:
 
-<img src="https://github.com/hacefresko/HTB-Web-WriteUps/blob/main/Breaking%20Grad/images/helpers:ObjectHelper.png" width="500px">
+<p align="center">
+    <img src="https://github.com/hacefresko/HTB-Web-WriteUps/blob/main/Breaking%20Grad/images/helpers:ObjectHelper.png" width="500px">
+</p>
 
 Merge functions usually lead to Prototype Pollution Vulnerabilities, so let's investigate it a bit.
 
@@ -42,21 +49,29 @@ prototype chain).
 
 helper/StudentHelper.js:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/helpers%3AStudentHelper.png" width="400px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/helpers%3AStudentHelper.png" width="400px">
+</p>
 
 Exploit used:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploit1.png" width="600px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploit1.png" width="600px">
+</p>
 
 Result of the execution:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo1.png" width="400px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo1.png" width="400px">
+</p>
 
 ## Remote Code Execution
 
 When accessing /debug/version, child_process.fork is executed inside helper/DebugHelper.js:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/helpers%3ADebugHelper.png" width="400px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/helpers%3ADebugHelper.png" width="400px">
+</p>
 
 Looking at the documentation, fork accepts two interesting parameters: 
 
@@ -71,14 +86,20 @@ As we can set any property we want to Object, we can pass any argument we want t
 
 We can write a simple script to exploit this:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploit2.png" width="800px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploit2.png" width="800px">
+</p>
 
 By passing 'ls' and '.' we see that the flag is in the same directory. We can get it by passing 'cat' and 'flag_name':
 
 Result of 'ls . VersionCheck.js':
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo2.png" width="400px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo2.png" width="400px">
+</p>
 
 Result of 'cat flag_name VersionCheck.js':
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo3.png" width="800px">
+<p align="center">
+    <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Breaking%20Grad/images/exploitDemo3.png" width="800px">
+</p>
