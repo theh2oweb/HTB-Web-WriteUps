@@ -1,12 +1,11 @@
 # Weather App
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/challenge.png" width="700px">
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/challenge.png" width="600px">
 
 First thing to do is download the files and run a docker container with the challenge, in order to test everything easily and be able to mess with the source code so we can check with console.log() everything we try. 
 Once we get it running, we can access the challenge at 127.0.0.1:1337
 
-<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/mainPage.png" width="700px">
-
+<img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/mainPage.png" width="600px">
 
 Now, let's dig into the code. This is a Node.js app using express, so we can see all 4 available routes at routes/index.js.
 
