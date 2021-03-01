@@ -125,7 +125,7 @@ will produce
 
     INSERT INTO users (username, password) VALUES ('admin', 1337') ON CONFLICT(username) DO UPDATE SET password = 'admin';--')
     
-If there is a conflict in username, the password will be updated to admin. Since username is defined initially as NOT NULL UNIQUE, when we try to insert 'admin', we will trigger this error as there is already an admin inside the database
+If there is a conflict in username, the password will be updated to admin. Since username is defined initially as NOT NULL UNIQUE, if we try to insert 'admin', we will trigger this error as there is already an admin inside the database
 
 Our final exploit is:
 
