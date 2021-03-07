@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/challenge.png" width="600px">
 
-First thing to do is download the files and run a docker container with the challenge, in order to test everything easily and be able to mess with the source code so we can check with console.log() everything we try. 
+First thing to do is download the files and run a docker container with the challenge, in order to test everything easily and be able to mess around with the source code so we can check with console.log() everything we try. 
 Once we get it running, we can access the challenge at 127.0.0.1:1337
 
 <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/mainPage.png" width="600px">
@@ -17,8 +17,6 @@ Now, let's dig into the code. This is a Node.js app using express, so we can see
 
 <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/api.png" width="500px">
 
-As we can see, to get the flag we must succesfuly login. The only requirement is to have an user with username 'admin'. However, in order to register a new user, the POST request must come from the server itself, so it would be nice to start looking for SSRF.
-
 Let's take a look at the database functions inside database.js:
 
 <img src="https://raw.githubusercontent.com/hacefresko/HTB-Web-WriteUps/main/Weather%20App/images/database.png" width="700px">
@@ -26,6 +24,8 @@ Let's take a look at the database functions inside database.js:
 migrate() function is used by index.js to initialize the database, so this functioin gives us some information about its initial state, such as that the username column is UNIQUE and that there is already an user with username 'admin'. This means that we cannot register another user with username 'admin' in order to directly login, we will need to either read the password or to change it.
 
 isAdmin() function is not vulnerable to injection, since it uses '?' to insert the parameters in the query and they already sanitize escape quotes. However, register() function does, since it doesn't use '?'. This means that we can only inject malicious payloads into the database by registering a new user.
+
+As we can see, to get the flag we must succesfuly login. The only requirement is to have an user with username 'admin'. However, in order to register a new user, the POST request must come from the server itself, so it would be nice to start looking for SSRF.
 
 Let's inspect WeatherHelper.getWeather inside helpers/WeatherHelper.js, used in /api/weather:
 
